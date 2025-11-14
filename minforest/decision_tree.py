@@ -87,7 +87,7 @@ class DecisionTree:
     @staticmethod
     def _build(x, y, depth, max_depth):
         # If we've gone to our maximum depth, or we've only got 1 remaining class
-        classes, counts = np.unique(y)
+        classes, counts = np.unique(y, return_counts=True)
         if depth >= max_depth or len(classes) == 1:
             # We use the highest count to choose our value at the end
             return DecisionNode.make_leaf(classes[np.argmax(counts)])
