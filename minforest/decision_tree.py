@@ -94,7 +94,7 @@ class DecisionTree:
         
         best = DecisionTree._best_split(x, y)
         # No valid splits
-        if best['gain'] == 0:
+        if best['gain'] == -np.inf:
             return DecisionNode.make_leaf(classes[np.argmax(counts)])
             
         left_mask  = x[:, best['feature']] <= best['threshold']
