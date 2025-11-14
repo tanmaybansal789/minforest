@@ -30,7 +30,7 @@ class DecisionNode:
 
     @staticmethod
     def make_leaf(value):
-        return DecisionNode(None, None, None, None, None, value)
+        return DecisionNode(None, None, None, None, value)
 
     def is_leaf(self):
         return self.value is not None
@@ -100,7 +100,7 @@ class DecisionTree:
         left_mask  = x[:, best['feature']] <= best['threshold']
         right_mask = x[:, best['feature']] >  best['threshold']
 
-        left  = DecisionTree.build(x[left_mask],  y[left_mask],  depth + 1, max_depth)
+        left  = DecisionTree._build(x[left_mask],  y[left_mask],  depth + 1, max_depth)
         right = DecisionTree._build(x[right_mask], y[right_mask], depth + 1, max_depth)
 
         return DecisionNode(
