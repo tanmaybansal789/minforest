@@ -19,14 +19,22 @@ def entropy(y):
 #####################
 
 class DecisionNode:
-    """ Represents a single numerical decision, splitting data based on a specific feature and threshold. """
-
     def __init__(self, feature, threshold, left, right, value=None):
         self.feature = feature     # The index of the feature we split our data on
         self.threshold = threshold # If under threshold, go to left node, otherwise right node
         self.left = left           # The left node
         self.right = right         # The right node
         self.value = value         # If this is a leaf node, the predicted class
+
+    def __str__(self, depth=0):
+        indent = "  " * depth
+        if self.is_leaf():
+            return f"{indent}Leaf(value={self.value})"
+
+        s = f"{indent}Node(feature={self.feature}, threshold={self.threshold:.4f})\n"
+        s += self.left.__str__(depth + 1) + "\n"
+        s += self.right.__str__(depth + 1)
+        return s
 
     @staticmethod
     def make_leaf(value):
@@ -40,17 +48,17 @@ class DecisionNode:
 ######################
 
 class DecisionTree:
-    """ Represents a tree of DecisionNodes """
-    def __init__(self, x, y, max_depth=10):
-        self.root = DecisionTree._build(x, y, 0, max_depth)
+    def __init__(self, x, y, max_depth=10, min_gain=1e-3):
+        self.root = DecisionTree._build(x, y, 0, max_depth, min_gain)
 
     @staticmethod
-    def _best_split(x, y):
+    def _best_split(x, y, min_gain):
         n_samples, n_features = x.shape
+
         best = {
             'feature'   : None,
             'threshold' : None,
-            'gain'      : -np.inf
+            'gain'      : min_gain
         }
         old_entropy = entropy(y)
 
@@ -71,7 +79,7 @@ class DecisionTree:
                 right_entropy = entropy(y[right_mask])
 
                 # .mean() on a boolean mask gets what fraction of the values are put into mask
-                # We use it as our weight (left_mask.mean() + right_mask.mean())
+                # We use it as our weight (left_mask.mean() + right_mask.mean() == 1)
                 new_entropy = (left_mask.mean() * left_entropy + 
                                right_mask.mean() * right_entropy)
 
@@ -85,16 +93,16 @@ class DecisionTree:
         return best
 
     @staticmethod
-    def _build(x, y, depth, max_depth):
+    def _build(x, y, depth, max_depth, min_gain):
         # If we've gone to our maximum depth, or we've only got 1 remaining class
         classes, counts = np.unique(y, return_counts=True)
         if depth >= max_depth or len(classes) == 1:
             # We use the highest count to choose our value at the end
             return DecisionNode.make_leaf(classes[np.argmax(counts)])
         
-        best = DecisionTree._best_split(x, y)
-        # No valid splits
-        if best['gain'] == -np.inf:
+        best = DecisionTree._best_split(x, y, min_gain)
+        # No useful splits
+        if best['gain'] == min_gain:
             return DecisionNode.make_leaf(classes[np.argmax(counts)])
             
         left_mask  = x[:, best['feature']] <= best['threshold']
@@ -122,4 +130,3 @@ class DecisionTree:
     
     def predict(self, x):
         return np.array([DecisionTree._predict_helper(self.root, xr) for xr in x])
-    
