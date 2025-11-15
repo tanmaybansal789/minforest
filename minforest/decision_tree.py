@@ -48,7 +48,7 @@ class DecisionNode:
 ######################
 
 class DecisionTree:
-    def __init__(self, x, y, max_depth=10, min_gain=1e-3):
+    def __init__(self, x, y, max_depth=None, min_gain=1e-7):
         self.root = DecisionTree._build(x, y, 0, max_depth, min_gain)
 
     @staticmethod
@@ -96,7 +96,7 @@ class DecisionTree:
     def _build(x, y, depth, max_depth, min_gain):
         # If we've gone to our maximum depth, or we've only got 1 remaining class
         classes, counts = np.unique(y, return_counts=True)
-        if depth >= max_depth or len(classes) == 1:
+        if (max_depth is not None and depth >= max_depth) or len(classes) == 1:
             # We use the highest count to choose our value at the end
             return DecisionNode.make_leaf(classes[np.argmax(counts)])
         
@@ -108,8 +108,8 @@ class DecisionTree:
         left_mask  = x[:, best['feature']] <= best['threshold']
         right_mask = x[:, best['feature']] >  best['threshold']
 
-        left  = DecisionTree._build(x[left_mask],  y[left_mask],  depth + 1, max_depth)
-        right = DecisionTree._build(x[right_mask], y[right_mask], depth + 1, max_depth)
+        left  = DecisionTree._build(x[left_mask],  y[left_mask],  depth + 1, max_depth, min_gain)
+        right = DecisionTree._build(x[right_mask], y[right_mask], depth + 1, max_depth, min_gain)
 
         return DecisionNode(
             best['feature'],
