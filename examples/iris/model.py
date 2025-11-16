@@ -5,6 +5,7 @@ import minforest as mf
 
 if __name__ == "__main__":
     iris = load_iris()
+    print(iris.DESCR)
     x = iris.data.astype(np.float32)
     y = iris.target.astype(np.int32)
 

@@ -58,7 +58,10 @@ class DecisionTree:
         best = {
             'feature'   : None,
             'threshold' : None,
-            'gain'      : min_gain
+            'gain'      : min_gain,
+            # Caching for performance
+            'masks'     : (None, None),
+            'y_split'   : (None, None)
         }
         old_entropy = entropy(y)
 
@@ -74,14 +77,13 @@ class DecisionTree:
                 # If none of the data is contained in one of the masks, then this is a useless threshold
                 if not any(left_mask) or not any(right_mask):
                     continue
-                    
-                left_entropy = entropy(y[left_mask])
-                right_entropy = entropy(y[right_mask])
+
+                y_left, y_right = y[left_mask], y[right_mask]
 
                 # .mean() on a boolean mask gets what fraction of the values are put into mask
                 # We use it as our weight (left_mask.mean() + right_mask.mean() == 1)
-                new_entropy = (left_mask.mean() * left_entropy + 
-                               right_mask.mean() * right_entropy)
+                new_entropy = (left_mask.mean() * entropy(y_left) +
+                               right_mask.mean() * entropy(y_right))
 
                 # The gain is just the reduction in entropy
                 gain = old_entropy - new_entropy
@@ -89,6 +91,8 @@ class DecisionTree:
                     best['feature'] = feature
                     best['threshold'] = t
                     best['gain'] = gain
+                    best['masks']   = (left_mask, right_mask)
+                    best['y_split'] = (y_left, y_right)
         
         return best
 
@@ -104,12 +108,12 @@ class DecisionTree:
         # No useful splits
         if best['gain'] == min_gain:
             return DecisionNode.make_leaf(classes[np.argmax(counts)])
-            
-        left_mask  = x[:, best['feature']] <= best['threshold']
-        right_mask = x[:, best['feature']] >  best['threshold']
 
-        left  = DecisionTree._build(x[left_mask],  y[left_mask],  depth + 1, max_depth, min_gain)
-        right = DecisionTree._build(x[right_mask], y[right_mask], depth + 1, max_depth, min_gain)
+        left_mask, right_mask = best['masks']
+        y_left, y_right = best['y_split']
+            
+        left  = DecisionTree._build(x[left_mask],  y_left,  depth + 1, max_depth, min_gain)
+        right = DecisionTree._build(x[right_mask], y_right, depth + 1, max_depth, min_gain)
 
         return DecisionNode(
             best['feature'],
